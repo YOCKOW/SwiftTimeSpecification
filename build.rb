@@ -1,5 +1,12 @@
 #!/usr/bin/env ruby
 
+=begin
+build.rb
+  © 2016 YOCKOW.
+    Licensed under MIT License.
+    See "LICENSE.txt" for more information.
+=end
+
 require 'fileutils'
 require 'optparse'
 require 'shellwords'
