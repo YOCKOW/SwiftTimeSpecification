@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 =begin
-build.rb
+build-install.rb
   © 2016 YOCKOW.
     Licensed under MIT License.
     See "LICENSE.txt" for more information.
