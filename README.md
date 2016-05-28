@@ -9,7 +9,7 @@ Then, you can use it:
 `swiftc ./your/project/main.swift -I/path/to/your/system/include -L/path/to/your/system/lib`  
 
 # Sample Code
-``
+```
 import TimeSpecification
 let start = Clock.System.timeSpecification()
 // your code
@@ -19,4 +19,4 @@ if start != nil && end != nil {
   let duration = end! - start!
   print("\(duration)")
 }
-``
+```
