@@ -4,5 +4,5 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 
 # How to use
 `./build.rb --install-prefix=/path/to/your/system`  
-`swiftc main.swift -I/path/to/your/system/include -L/path/to/your/system/lib`  
+`swiftc ./your/project/main.swift -I/path/to/your/system/include -L/path/to/your/system/lib`  
 
