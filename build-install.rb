@@ -136,7 +136,7 @@ end
 if build_directory !~ /^\//
   build_directory = File.expand_path(File.dirname(__FILE__) + "/#{build_directory}")
 end
-if sdk && !sdk.empty?
+if OS == :OS_X && sdk && !sdk.empty?
   build_directory += "/#{sdk}"
 end
 build_include_directory = "#{build_directory}/include"
@@ -221,7 +221,7 @@ if !skip_test
   end
   
   puts("Start tests")
-  if !system(escaped_test_executable)
+  if !system(%Q[LD_LIBRARY_PATH=#{escaped_build_lib_directory} #{escaped_test_executable}])
     failed("TEST FAILED.")
   end
   
