@@ -23,7 +23,7 @@ public enum Clock {
 
 # How to use
 Build and install:  
-`./build-install.rb --install-prefix=/path/to/your/system`  
+`./build-install.rb --install-prefix=/path/to/your/system --install`  
 Then, you can use it in your project:  
 `swiftc ./your/project/main.swift -I/path/to/your/system/include -L/path/to/your/system/lib`  
 
