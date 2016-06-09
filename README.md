@@ -1,5 +1,5 @@
 # What is SwiftTimeSpecification?
-SwiftTimeSpecification is an implementation of `struct timespec` in Swift Programming Language.  
+SwiftTimeSpecification is an implementation of `struct timespec` (`struct mach_timespec` on OS X) in Swift Programming Language.  
 Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b79fb2).  
 
 ## Class, Structure, Enumeration
