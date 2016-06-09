@@ -168,6 +168,7 @@ exit_if_path_is_not_directory(Options[:build_directory])
 Options[:build_directory] += Options[:sdk] if !Options[:sdk].nil?
 exit_if_path_is_not_directory(Options[:build_directory])
 FileUtils.rm_r(Options[:build_directory].to_s) if Options[:clean]
+FileUtils.mkdir_p(Options[:build_directory].to_s)
 
 # Set Options from defaults
 cache_txt = Options[:build_directory] + 'build_options-cache.txt'
@@ -197,7 +198,7 @@ if !system(%Q[which #{Options[:swiftc].escaped} >/dev/null])
   failed("`swiftc` is not found.")
 end
 swiftc_command =
-  (OS == :OS_X) ? "xcrun --sdk #{Options[:sdk]} #{Options[:swiftc]}"
+  (OS == :OS_X) ? "xcrun --sdk #{Options[:sdk]} #{Options[:swiftc].escaped}"
   : Options[:swiftc].escaped
 
 # Detect Swift Version
@@ -217,8 +218,8 @@ puts(%Q[  Swift Compiler: #{Options[:swiftc].to_s}])
 puts(%Q[  Swift Version: #{swift_version}])
 puts(%Q[  The Build Directory: "#{Options[:build_directory].to_s}"])
 if Options[:install]
-  puts(%Q[  The Installation Prefix: "#{Options[:prefix]}"])
-  else
+  puts(%Q[  The Installation Prefix: "#{Options[:prefix].to_s}"])
+else
   puts(%Q[  No products will be installed.])
 end
 puts(%Q[  Skip building: #{Options[:skip_build] ? "Yes" : "No"}])
@@ -229,8 +230,8 @@ build_include_directory = Options[:build_directory] + 'include'
 build_lib_directory = Options[:build_directory] + 'lib'
 if !Options[:skip_build] || !Options[:skip_test]
   FileUtils.mkdir_p(Options[:build_directory].to_s) if !File.exists?(Options[:build_directory])
-  FileUtils.mkdir_p(build_include_directory) if !File.exists?(build_include_directory)
-  FileUtils.mkdir_p(build_lib_directory) if !File.exists?(build_lib_directory)
+  FileUtils.mkdir_p(build_include_directory.to_s) if !File.exists?(build_include_directory)
+  FileUtils.mkdir_p(build_lib_directory.to_s) if !File.exists?(build_lib_directory)
 end
 
 # Let's Start!
@@ -276,7 +277,7 @@ if !Options[:skip_test]
   if !test_executable.exist?
     puts("Start building an executable")
     build_test =
-      "#{swiftc_commend} " +
+      "#{swiftc_command} " +
       test_sources.map{|file| file.escaped}.join(' ') + ' ' +
       "-o#{test_executable.escaped} " +
       "-I#{build_include_directory.escaped} " +
