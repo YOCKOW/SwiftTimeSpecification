@@ -19,7 +19,7 @@ OS = case RbConfig::CONFIG['host_os']
   when /linux/i then :Linux
   else :Other
 end
-RequiredSwiftVersion = '2.0'
+RequiredSwiftVersion = '3.0'
 SharedLibraryPrefix = 'lib'
 SharedLibrarySuffix = (OS == :OS_X) ? '.dylib' : '.so'
 SourcesDirectory = (Pathname(__FILE__).dirname + 'Sources').expand_path
