@@ -5,8 +5,8 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 ## Class, Structure, Enumeration
 ```
 public struct TimeSpecification: Comparable,
-                                 IntegerLiteralConvertible,
-                                 FloatLiteralConvertible {
+                                 ExpressibleByIntegerLiteral,
+                                 ExpressibleByFloatLiteral {
   public var seconds:Int64 = 0
   public var nanoseconds:Int32 = 0
   /* ... */

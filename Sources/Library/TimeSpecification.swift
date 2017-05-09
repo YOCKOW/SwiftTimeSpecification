@@ -1,6 +1,6 @@
 /***************************************************************************************************
  TimeSpecification.swift
-  © 2016 YOCKOW.
+  © 2016-2017 YOCKOW.
     Licensed under MIT License.
     See "LICENSE.txt" for more information.
  **************************************************************************************************/
@@ -17,8 +17,8 @@
 #endif
 
 public struct TimeSpecification: Comparable,
-                                 IntegerLiteralConvertible,
-                                 FloatLiteralConvertible {
+                                 ExpressibleByIntegerLiteral,
+                                 ExpressibleByFloatLiteral {
   public var seconds:Int64 = 0
   public var nanoseconds:Int32 = 0 {
     didSet { self.normalize() }
@@ -46,11 +46,9 @@ public struct TimeSpecification: Comparable,
 }
 
 /* Comparable */
-@warn_unused_result
 public func ==(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
   return (lhs.seconds == rhs.seconds && lhs.nanoseconds == rhs.nanoseconds) ? true : false
 }
-@warn_unused_result
 public func <(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
   if lhs.seconds < rhs.seconds { return true }
   if lhs.seconds > rhs.seconds { return false }
@@ -78,30 +76,28 @@ extension TimeSpecification {
 }
 
 /* Sum And Difference */
-@warn_unused_result
 public func + (lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
   var result = lhs
   result.seconds += rhs.seconds
   result.nanoseconds += rhs.nanoseconds // always normalized
   return result
 }
-@warn_unused_result
 public func - (lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
   var result = lhs
   result.seconds -= rhs.seconds
   result.nanoseconds -= rhs.nanoseconds // always normalized
   return result
 }
-public func += (inout lhs:TimeSpecification, rhs:TimeSpecification) {
+public func += (lhs:inout TimeSpecification, rhs:TimeSpecification) {
   lhs = lhs + rhs // always normalized
 }
-public func -= (inout lhs:TimeSpecification, rhs:TimeSpecification) {
+public func -= (lhs:inout TimeSpecification, rhs:TimeSpecification) {
   lhs = lhs - rhs // always normalized
 }
 
 /* Clock */
 extension TimeSpecification {
-  private init(_ cts:CTimeSpec) {
+  fileprivate init(_ cts:CTimeSpec) {
     self.seconds = Int64(cts.tv_sec)
     self.nanoseconds = Int32(cts.tv_nsec)
   }
