@@ -21,3 +21,4 @@ Includes swift-tap
   https://github.com/dankogai/swift-tap
 Copyright (c) 2016 Dan Kogai
 Released under the MIT License.
+- See "Sources/Test/TAP.swift"
