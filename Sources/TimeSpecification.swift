@@ -57,7 +57,7 @@ public func <(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
   return false
 }
 
-/* IntegerLiteralConvertible */
+/* ExpressibleByIntegerLiteral */
 extension TimeSpecification {
   public typealias IntegerLiteralType = Int64
   public init(integerLiteral value:Int64) {
@@ -66,7 +66,7 @@ extension TimeSpecification {
   }
 }
 
-/* FloatLiteralConvertible */
+/* ExpressibleByFloatLiteral */
 extension TimeSpecification {
   public typealias FloatLiteralType = Double
   public init(floatLiteral value:Double) {
