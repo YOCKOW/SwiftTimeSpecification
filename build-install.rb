@@ -233,17 +233,21 @@ if !Options[:skip_test]
 end
 
 # Install
-if !Options[:install]
+if Options[:install]
   puts("[Installing...]")
   
   if Options[:debug]
     $stderr.puts("** WARNING ** DEBUG MODE. Products to be installed may not be optimized.\n")
   end
+
+  libInstallDirPath = Options[:prefix] + Pathname('lib')  
+  libInstallPath = libInstallDirPath + libFilename
+  moduleInstallDirPath = Options[:prefix] + Pathname('include')
+  moduleInstallPath = moduleInstallDirPath + moduleFilename
   
-  libInstallPath = Options[:prefix] + Pathname('lib') + libFilename
-  moduleInstallPath = Options[:prefix] + Pathname('include') + moduleFilename
-  
-  try_exec("cp #{libPath.escaped()} #{libInstallPath.escaped()} && " +
-           "cp #{modulePath.escaped()} #{moduleInstallPath.escaped()}", 2)
+  try_exec(["mkdir -p #{libInstallDirPath.escaped()} &&",
+            "cp #{libPath.escaped()} #{libInstallPath.escaped()} &&",
+            "mkdir -p #{moduleInstallDirPath.escaped()} &&",
+            "cp #{modulePath.escaped()} #{moduleInstallPath.escaped()}"].join(" "), 2)
 end
 
