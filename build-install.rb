@@ -2,138 +2,154 @@
 
 =begin
 build-install.rb
-  © 2016 YOCKOW.
+  © 2016-2017 YOCKOW.
     Licensed under MIT License.
     See "LICENSE.txt" for more information.
 =end
 
+# Requirements #####################################################################################
 require 'fileutils'
 require 'json'
 require 'optparse'
 require 'pathname'
+require 'open3'
 require 'shellwords'
 
-# Constants
+# Constants ########################################################################################
 OS = case RbConfig::CONFIG['host_os']
-  when /darwin/i then :OS_X
+  when /darwin/i then :macOS
   when /linux/i then :Linux
   else :Other
 end
-RequiredSwiftVersion = '3.0'
 SharedLibraryPrefix = 'lib'
-SharedLibrarySuffix = (OS == :OS_X) ? '.dylib' : '.so'
-SourcesDirectory = (Pathname(__FILE__).dirname + 'Sources').expand_path
-LibrarySources = [
-  'Library'
-].map{|fn| Pathname(fn)}
-TestSources = [
-  'Test'
-].map{|fn| Pathname(fn)}
+SharedLibrarySuffix = (OS == :macOS) ? '.dylib' : '.so'
 ModuleName = 'TimeSpecification'
-ModuleLinkName = 'SwiftTimeSpecification'
+ModuleLinkName = 'Swift' + ModuleName
+RootDirectory = Pathname(__FILE__).dirname.expand_path
 
-## Default Values
+## Default Values ##
 Defaults = {
-  :swiftc => Pathname('swiftc'),
-  :build_directory => Pathname('build'),
+  :swift => Pathname('swift'),
+  :build_directory => Pathname('./build'),
   :install => false,
   :prefix => Pathname('/usr/local'),
+  :debug => false,
   :skip_build => false,
   :skip_test => false,
-  :sdk => 'macosx',
   :clean => false
 }
-
-## Options
+## Options ##
 Options = {
-  :swiftc => nil,
+  :swift => nil,
   :build_directory => nil,
   :install => nil,
   :prefix => nil,
+  :debug => nil,
   :skip_build => nil,
   :skip_test => nil,
   :sdk => nil,
   :clean => nil
 }
+## Canceled ##
+Canceled = {
+  :debug => nil,
+  :skip_build => nil,
+  :skip_test => nil
+}
+### Qualifications ###
+UnsavableOptions = [:build_directory, :sdk, :clean]
+PathnameOptions = [:ninja, :swift, :build_directory, :prefix]
 
-# Functions
+# Functions ########################################################################################
+## Error ##
 def failed(message)
-  $stderr.puts(message)
-  exit
+  $stderr.puts("!!ERROR!! #{message}")
+  exit(false)
 end
 
-def all_files_in_dir(dirname, basedir)
-  files = []
-  directory = basedir + dirname
-  Dir.foreach(directory.to_s) {|filename|
-    next if filename =~ /\A\.\.?\Z/
-    path = directory + filename
-    if path.directory?
-      files.concat(all_files_in_dir(filename, directory))
-    else
-      files.push(path)
-    end
+## Run Shell Script
+def try_exec(command, indent = 0)
+  puts(' ' * indent + "Execute: #{command}")
+  Open3.popen3(command) {|stdin, stdout, stderr, wait_thread|
+    stdin.close
+    stdout.each {|line| $stdout.puts(' ' * indent * 2 + line) }
+    stderr.each {|line| $stderr.puts(' ' * indent * 2 + line) }
+    
+    status = wait_thread.value.exitstatus
+    failed("Command exited with status #{status}") if status != 0
   }
-  return files
-end
-def all_files(list, rootdir)
-  files = []
-  list.each {|filename|
-    path = rootdir + filename
-    failed("#{path.to_s}: No such file or directory.") if !path.exist?
-    if path.directory?
-      files.concat(all_files_in_dir(filename, rootdir))
-    elsif
-      files.push(path)
-    end
-  }
-  return files
 end
 
-# Extends class
+# Extends Class(es) ################################################################################
+## Pathname ##
 class Pathname
-  def escaped
-    return Shellwords.shellescape(self.to_s)
+  def escaped(type = :shell)
+    return Shellwords.shellescape(self.to_s) if type == :shell
+    return self.to_s.gsub(/\$/, '$$').gsub(/\s/, '$\&') if type == :ninja
+    return self.to_s
+  end
+  def exit_if_i_am_file
+    failed("#{self.to_s} is not directory.") if self.exist? && !self.directory?
   end
 end
 
-# Parsing Options
+# Parse Options ####################################################################################
 OptionParser.new(__FILE__){|parser|
-  parser.on('--swiftc=PATH',
-            'Path to the Swift compiler which you want to use.') {|path|
-    Options[:swiftc] = Pathname(path)
+  parser.on('--swift=PATH',
+            'Path to `swift` which you want to use.') {|path|
+    path = Pathname(path)
+    path += 'swift' if path.directory?
+    Options[:swift] = Pathname(path)
   }
   parser.on('--build-dir=PATH', '--build-directory=PATH',
-            'Name of the directory where the build products will be placed.') {|path|
+            'Name of the directory where the build products will be placed. ' +
+            'Default: ' + Defaults[:build_directory].to_s) {|path|
     Options[:build_directory] = Pathname(path)
   }
+  
   parser.on('--install',
             'Whether to install products or not.') {|value|
     Options[:install] = value
   }
   parser.on('--prefix=PATH', '--install-prefix=PATH',
-            'The installation prefix.') {|path|
+            'The installation prefix. (Only used when `--install` is specified.) ' +
+            'Default: ' + Defaults[:prefix].to_s) {|path|
     Options[:prefix] = Pathname(path)
     Options[:prefix]= Options[:prefix].expand_path if path =~ /\A~\//
     if !Options[:prefix].absolute?
       failed(%Q[The installation prefix must be absolute path.])
-    elsif Options[:prefix].exist? && !Options[:prefix].directory?
-      failed(%Q["#{path}" is not directory.])
     end
+    Options[:prefix].exit_if_i_am_file
+    Options[:install] = true # install library if prefix is specified.
   }
+  
+  parser.on('--debug',
+            'Debug builds') {|value|
+    Options[:debug] = value
+  }
+  parser.on('--release',
+            'Release builds; default is on') {|value|
+    Canceled[:debug] = value
+  }
+  
   parser.on('--skip-build',
             'Whether to skip building or not.') {|value|
     Options[:skip_build] = value
   }
+  parser.on('--do-build',
+            'Cancel skipping building') {|value|
+    Canceled[:skip_build] = value
+  }
+  
   parser.on('--skip-test',
             'Whether to skip testing or not.') {|value|
     Options[:skip_test] = value
   }
-  parser.on('--sdk=VALUE',
-            '(OS X Only) SDK name to be passed to `xcrun`.'){|value|
-    Options[:sdk] = value
-    failed("Invalid SDK Name: #{sdk}") if sdk !~ /\A[\.0-9A-Z_a-z]+\Z/
+  parser.on('--do-test',
+            'Cancel skipping testing') {|value|
+    Canceled[:skip_test] = value
   }
+  
   parser.on('--clean',
             'Whether to clean up or not.') {|value|
     Options[:clean] = value
@@ -146,43 +162,27 @@ OptionParser.new(__FILE__){|parser|
   end
 }
 
-# Set SDK Name if it's nil
-Options[:sdk] = Defaults[:sdk] if OS == :OS_X && Options[:sdk].nil?
+# Determine Options ################################################################################
+UnsavableOptions.each{|key| Options[key] = Defaults[key] if Options[key].nil?}
 
-# Check SDK Name
-if OS == :OS_X && !system(%Q[xcrun --sdk #{Options[:sdk]} --show-sdk-path >/dev/null 2>&1])
-  if $?.exitstatus == 127
-    failed("'xcrun' does not exist.")
-    else
-    failed("Invalid SDK Name: #{Options[:sdk]}")
-  end
-end
-
-# Build Directory
-def exit_if_path_is_not_directory(path)
-  failed(%Q["#{path.to_s}" is Not Directory]) if path.exist? && !path.directory?
-end
+## Build Directory
 Options[:build_directory] = Defaults[:build_directory] if Options[:build_directory].nil?
-Options[:build_directory] = Options[:build_directory].expand_path if Options[:build_directory].relative?
-exit_if_path_is_not_directory(Options[:build_directory])
-Options[:build_directory] += Options[:sdk] if !Options[:sdk].nil?
-exit_if_path_is_not_directory(Options[:build_directory])
+Options[:build_directory] = RootDirectory + Options[:build_directory] if Options[:build_directory].relative?
+Options[:build_directory].exit_if_i_am_file
 FileUtils.rm_r(Options[:build_directory].to_s) if Options[:clean]
 FileUtils.mkdir_p(Options[:build_directory].to_s)
 
-# Set Options from defaults
-cache_txt = Options[:build_directory] + 'build_options-cache.txt'
+## Save/Read Cache
+cache_json = Options[:build_directory] + 'build_options-cache.json'
 saved_defaults = nil
-if cache_txt.exist?
-  saved_defaults = JSON.parse(File.read(cache_txt.to_s), {:symbolize_names => true})
+if cache_json.exist?
+  saved_defaults = JSON.parse(File.read(cache_json.to_s), {:symbolize_names => true})
   saved_defaults.each_key{|key|
-    if key == :build_directory || key == :swiftc || key == :prefix
-      saved_defaults[key] = Pathname(saved_defaults[key])
-    end
+    saved_defaults[key] = Pathname(saved_defaults[key]) if PathnameOptions.include?(key)
   }
 end
 Defaults.each_pair{|key, value|
-  next if key == :sdk || key == :build_directory || key == :clean
+  next if UnsavableOptions.include?(key)
   if Options[key].nil?
     if !saved_defaults.nil? && !saved_defaults[key].nil?
       Options[key] = saved_defaults[key]
@@ -191,126 +191,59 @@ Defaults.each_pair{|key, value|
     end
   end
 }
-File.write(cache_txt.to_s, JSON.dump(Options))
+Canceled.each_pair{|key, value|
+  Options[key] = false if !value.nil? && value
+}
+File.write(cache_json.to_s, JSON.dump(Options))
+Options.each_pair {|key, value| Options[key] = Defaults[key] if value.nil? }
 
-# Determine Swift Path
-if !system(%Q[which #{Options[:swiftc].escaped} >/dev/null])
-  failed("`swiftc` is not found.")
-end
-swiftc_command =
-  (OS == :OS_X) ? "xcrun --sdk #{Options[:sdk]} #{Options[:swiftc].escaped}"
-  : Options[:swiftc].escaped
+# Swift? ###########################################################################################
+failed("#{Options[:swift]} is not found.") if !system(%Q[which #{Options[:swift].escaped} >/dev/null])
 
-# Detect Swift Version
-swift_version = %x[#{swiftc_command} --version]
-if swift_version =~ /^(?:Apple\s+)?Swift\s+version\s+(\d+)((?:\.\d+)*)\s+/
-  swift_version = Regexp.last_match(1) + Regexp.last_match(2)
-  if (swift_version.split('.').map(&:to_i) <=> RequiredSwiftVersion.split('.').map(&:to_i)) < 0
-    failed("The minimum required version of Swift is #{RequiredSwiftVersion}")
-  end
-else
-  failed("Cannot detect the version of Swift: #{swift_version}")
-end
+# Build! ###########################################################################################
+configuration = Options[:debug] ? 'debug' : 'release'
 
-# Print Options
-puts("Options:")
-puts(%Q[  Swift Compiler: #{Options[:swiftc].to_s}])
-puts(%Q[  Swift Version: #{swift_version}])
-puts(%Q[  The Build Directory: "#{Options[:build_directory].to_s}"])
-if Options[:install]
-  puts(%Q[  The Installation Prefix: "#{Options[:prefix].to_s}"])
-else
-  puts(%Q[  No products will be installed.])
-end
-puts(%Q[  Skip building: #{Options[:skip_build] ? "Yes" : "No"}])
-puts(%Q[  Skip testing: #{Options[:skip_test] ? "Yes" : "No"}])
+libFilename = Pathname(SharedLibraryPrefix + ModuleLinkName + SharedLibrarySuffix)
+libPath = Options[:build_directory] + Pathname(configuration) + libFilename
+moduleFilename = Pathname(ModuleName + '.swiftmodule')
+modulePath = Options[:build_directory] + Pathname(configuration) + moduleFilename
 
-# Create directories
-build_include_directory = Options[:build_directory] + 'include'
-build_lib_directory = Options[:build_directory] + 'lib'
-if !Options[:skip_build] || !Options[:skip_test]
-  FileUtils.mkdir_p(Options[:build_directory].to_s) if !File.exists?(Options[:build_directory])
-  FileUtils.mkdir_p(build_include_directory.to_s) if !File.exists?(build_include_directory)
-  FileUtils.mkdir_p(build_lib_directory.to_s) if !File.exists?(build_lib_directory)
-end
-
-# Let's Start!
-def try_exec(command)
-  puts("  Execute: #{command}")
-  if !system(command)
-    failed("Command exited with status #{$?.exitstatus}")
-  end
-end
-
-## BUILD
+# Build
 if !Options[:skip_build]
-  puts("===== BUILD =====")
-  
-  library_sources = all_files(LibrarySources, SourcesDirectory)
-  
-  create_module =
-    "#{swiftc_command} " +
-    library_sources.map{|file| file.escaped}.join(' ') + ' ' +
-    "-module-name #{ModuleName} " +
-    "-module-link-name #{ModuleLinkName} " +
-    "-emit-module-path #{build_include_directory.escaped}/#{ModuleName}.swiftmodule "
-  try_exec(create_module)
-  
-  build_library =
-    "#{swiftc_command} " +
-    library_sources.map{|file| file.escaped}.join(' ') + ' ' +
-    "-module-name #{ModuleName} " +
-    "-emit-library " +
-    "-o#{build_lib_directory.escaped}/#{SharedLibraryPrefix}#{ModuleLinkName}#{SharedLibrarySuffix}"
-  try_exec(build_library)
-  
-  puts("...DONE")
+  puts("[Start Building...]")
+  try_exec(["swift build --build-path #{Options[:build_directory].escaped()}",
+           "--configuration #{configuration}",
+           "-Xswiftc -emit-library -Xswiftc -o#{libPath.escaped()}",
+           "-Xswiftc -module-link-name -Xswiftc #{ModuleLinkName}",
+           "-Xswiftc -module-name -Xswiftc #{ModuleName}",
+           "-Xswiftc -emit-module-path -Xswiftc #{modulePath.escaped()}"].join(" "),
+           2)
+  puts()
 end
 
-## TEST
+# Test
 if !Options[:skip_test]
-  puts("===== TEST =====")
-  
-  test_executable = Options[:build_directory] + 'test'
-  test_sources = all_files(TestSources, SourcesDirectory)
-  
-  if !test_executable.exist?
-    puts("Start building an executable")
-    build_test =
-      "#{swiftc_command} " +
-      test_sources.map{|file| file.escaped}.join(' ') + ' ' +
-      "-o#{test_executable.escaped} " +
-      "-I#{build_include_directory.escaped} " +
-      "-L#{build_lib_directory.escaped}"
-    try_exec(build_test)
+  if !Options[:debug]
+    $stderr.puts("** WARNING ** No tests will be executed when `release` mode is specified.\n")
+  else
+    puts("[Start Testing...]")
+    try_exec(["swift test --build-path #{Options[:build_directory].escaped()}",
+             "--configuration #{configuration}"].join(" "), 2)
   end
-  
-  puts("Start tests")
-  if !system(%Q[LD_LIBRARY_PATH=#{build_lib_directory.escaped} #{test_executable.escaped}])
-    failed("TEST FAILED.")
-  end
-  
-  puts("..SUCCESSFUL")
 end
 
-## INSTALL
-if Options[:install]
-  puts("===== INSTALL =====")
+# Install
+if !Options[:install]
+  puts("[Installing...]")
   
-  include_directory = Options[:prefix] + 'include'
-  lib_directory = Options[:prefix] + 'lib'
-  
-  FileUtils.mkdir_p(include_directory.to_s) if !File.exists?(include_directory)
-  FileUtils.mkdir_p(lib_directory.to_s) if !File.exists?(lib_directory)
-
-  begin
-    FileUtils.copy_entry(build_include_directory.to_s,
-                         include_directory.to_s)
-    FileUtils.copy_entry(build_lib_directory.to_s,
-                         lib_directory.to_s)
-  rescue
-   failed("Installation Failed.")
+  if Options[:debug]
+    $stderr.puts("** WARNING ** DEBUG MODE. Products to be installed may not be optimized.\n")
   end
   
-  puts("...DONE.")
+  libInstallPath = Options[:prefix] + Pathname('lib') + libFilename
+  moduleInstallPath = Options[:prefix] + Pathname('include') + moduleFilename
+  
+  try_exec("cp #{libPath.escaped()} #{libInstallPath.escaped()} && " +
+           "cp #{modulePath.escaped()} #{moduleInstallPath.escaped()}", 2)
 end
+
