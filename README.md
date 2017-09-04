@@ -2,10 +2,8 @@
 SwiftTimeSpecification is an implementation of `struct timespec` (`struct mach_timespec` on OS X) in Swift Programming Language.  
 Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b79fb2).  
 
-|Branch     |Build Status                                                                                                                                      |
-|:---------:|:------------------------------------------------------------------------------------------------------------------------------------------------:|
-|master     |[![Build Status](https://travis-ci.org/YOCKOW/SwiftTimeSpecification.svg?branch=master)     ](https://travis-ci.org/YOCKOW/SwiftTimeSpecification)|
-|development|[![Build Status](https://travis-ci.org/YOCKOW/SwiftTimeSpecification.svg?branch=development)](https://travis-ci.org/YOCKOW/SwiftTimeSpecification)|
+[![Build Status](https://travis-ci.org/YOCKOW/SwiftTimeSpecification.svg?branch=master)](https://travis-ci.org/YOCKOW/SwiftTimeSpecification)
+
 
 ## Class, Structure, Enumeration
 ```
