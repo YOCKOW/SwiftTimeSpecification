@@ -223,13 +223,14 @@ end
 
 # Test
 if !Options[:skip_test]
+  puts("[Start Testing...]")
   if !Options[:debug]
     $stderr.puts("** WARNING ** No tests will be executed when `release` mode is specified.\n")
   else
-    puts("[Start Testing...]")
     try_exec(["swift test --build-path #{Options[:build_directory].escaped()}",
              "--configuration #{configuration}"].join(" "), 2)
   end
+  puts()
 end
 
 # Install
