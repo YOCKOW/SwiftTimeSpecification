@@ -105,8 +105,8 @@ extension TimeSpecification {
   }
 }
 public enum Clock {
-  case Calendar
-  case System
+  case calendar
+  case system
   
   public var timeSpecification: TimeSpecification? {
     var c_timespec:CTimeSpec = CTimeSpec(tv_sec:0, tv_nsec:0)
@@ -115,11 +115,11 @@ public enum Clock {
     var retval:CInt = -1
     
     #if os(Linux)
-      clock_id = (self == .Calendar) ? CLOCK_REALTIME : CLOCK_MONOTONIC
+      clock_id = (self == .calendar) ? CLOCK_REALTIME : CLOCK_MONOTONIC
       retval = clock_gettime(clock_id, &c_timespec)
     #elseif os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
       var clock_name: clock_serv_t = 0
-      clock_id = (self == .Calendar) ? CALENDAR_CLOCK : SYSTEM_CLOCK
+      clock_id = (self == .calendar) ? CALENDAR_CLOCK : SYSTEM_CLOCK
       retval = host_get_clock_service(mach_host_self(), clock_id, &clock_name)
       guard retval == 0 else { return nil }
       retval = clock_get_time(clock_name, &c_timespec)

@@ -13,8 +13,8 @@ public struct TimeSpecification {
   /* ... */
 }
 public enum Clock {
-  case Calendar
-  case System
+  case calendar
+  case system
   
   public var timeSpecification: TimeSpecification? {
     /* ... */
@@ -33,9 +33,9 @@ Then, you can use it in your project:
 import TimeSpecification
 
 func time(_ body:() -> Void) {
-  guard let start = Clock.System.timeSpecification else { return }
+  guard let start = Clock.system.timeSpecification else { return }
   body()
-  guard let end = Clock.System.timeSpecification else { return }
+  guard let end = Clock.system.timeSpecification else { return }
   let duration = end - start
   print("\(duration)")
 }
