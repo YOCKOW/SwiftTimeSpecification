@@ -16,9 +16,7 @@
   // UNKNOWN OS
 #endif
 
-public struct TimeSpecification: Comparable,
-                                 ExpressibleByIntegerLiteral,
-                                 ExpressibleByFloatLiteral {
+public struct TimeSpecification {
   public var seconds:Int64 = 0
   public var nanoseconds:Int32 = 0 {
     didSet { self.normalize() }
@@ -45,20 +43,22 @@ public struct TimeSpecification: Comparable,
   }
 }
 
-/* Comparable */
-public func ==(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
-  return (lhs.seconds == rhs.seconds && lhs.nanoseconds == rhs.nanoseconds) ? true : false
+/// Comparable
+extension TimeSpecification: Comparable {
+  public static func ==(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
+    return (lhs.seconds == rhs.seconds && lhs.nanoseconds == rhs.nanoseconds) ? true : false
+  }
+  public static func <(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
+    if lhs.seconds < rhs.seconds { return true }
+    if lhs.seconds > rhs.seconds { return false }
+    // then, in the case of (lhs.seconds == rhs.seconds)
+    if (lhs.nanoseconds < rhs.nanoseconds) { return true }
+    return false
+  }
 }
-public func <(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
-  if lhs.seconds < rhs.seconds { return true }
-  if lhs.seconds > rhs.seconds { return false }
-  // then, in the case of (lhs.seconds == rhs.seconds)
-  if (lhs.nanoseconds < rhs.nanoseconds) { return true }
-  return false
-}
-
-/* ExpressibleByIntegerLiteral */
-extension TimeSpecification {
+  
+/// ExpressibleByIntegerLiteral
+extension TimeSpecification: ExpressibleByIntegerLiteral {
   public typealias IntegerLiteralType = Int64
   public init(integerLiteral value:Int64) {
     self.seconds = value
@@ -66,8 +66,8 @@ extension TimeSpecification {
   }
 }
 
-/* ExpressibleByFloatLiteral */
-extension TimeSpecification {
+/// ExpressibleByFloatLiteral
+extension TimeSpecification: ExpressibleByFloatLiteral {
   public typealias FloatLiteralType = Double
   public init(floatLiteral value:Double) {
     self.seconds = Int64(floor(value))
@@ -75,24 +75,26 @@ extension TimeSpecification {
   }
 }
 
-/* Sum And Difference */
-public func + (lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
-  var result = lhs
-  result.seconds += rhs.seconds
-  result.nanoseconds += rhs.nanoseconds // always normalized
-  return result
-}
-public func - (lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
-  var result = lhs
-  result.seconds -= rhs.seconds
-  result.nanoseconds -= rhs.nanoseconds // always normalized
-  return result
-}
-public func += (lhs:inout TimeSpecification, rhs:TimeSpecification) {
-  lhs = lhs + rhs // always normalized
-}
-public func -= (lhs:inout TimeSpecification, rhs:TimeSpecification) {
-  lhs = lhs - rhs // always normalized
+/// Sum And Difference
+extension TimeSpecification {
+  public static func +(lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
+    var result = lhs
+    result.seconds += rhs.seconds
+    result.nanoseconds += rhs.nanoseconds // always normalized
+    return result
+  }
+  public static func -(lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
+    var result = lhs
+    result.seconds -= rhs.seconds
+    result.nanoseconds -= rhs.nanoseconds // always normalized
+    return result
+  }
+  public static func +=(lhs:inout TimeSpecification, rhs:TimeSpecification) {
+    lhs = lhs + rhs // always normalized
+  }
+  public static func -=(lhs:inout TimeSpecification, rhs:TimeSpecification) {
+    lhs = lhs - rhs // always normalized
+  }
 }
 
 /* Clock */
@@ -106,7 +108,7 @@ public enum Clock {
   case Calendar
   case System
   
-  public func timeSpecification() -> TimeSpecification? {
+  public var timeSpecification: TimeSpecification? {
     var c_timespec:CTimeSpec = CTimeSpec(tv_sec:0, tv_nsec:0)
     
     let clock_id:CInt
@@ -115,11 +117,11 @@ public enum Clock {
     #if os(Linux)
       clock_id = (self == .Calendar) ? CLOCK_REALTIME : CLOCK_MONOTONIC
       retval = clock_gettime(clock_id, &c_timespec)
-    #elseif os(OSX) || os(iOS) || os(watchOS) || os(tvOS)
+    #elseif os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
       var clock_name: clock_serv_t = 0
       clock_id = (self == .Calendar) ? CALENDAR_CLOCK : SYSTEM_CLOCK
       retval = host_get_clock_service(mach_host_self(), clock_id, &clock_name)
-      if retval != 0 { return nil }
+      guard retval == 0 else { return nil }
       retval = clock_get_time(clock_name, &c_timespec)
       _ = mach_port_deallocate(mach_task_self(), clock_name)
     #endif

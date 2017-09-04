@@ -9,9 +9,7 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 
 ## Class, Structure, Enumeration
 ```
-public struct TimeSpecification: Comparable,
-                                 ExpressibleByIntegerLiteral,
-                                 ExpressibleByFloatLiteral {
+public struct TimeSpecification {
   public var seconds:Int64 = 0
   public var nanoseconds:Int32 = 0
   /* ... */
@@ -20,7 +18,7 @@ public enum Clock {
   case Calendar
   case System
   
-  public func timeSpecification() -> TimeSpecification? {
+  public var timeSpecification: TimeSpecification? {
     /* ... */
   }
 }
@@ -35,13 +33,12 @@ Then, you can use it in your project:
 # Sample Code
 ```
 import TimeSpecification
-let start = Clock.System.timeSpecification()
-// your code
-let end = Clock.System.timeSpecification()
 
-if start != nil && end != nil {
-  let duration = end! - start!
-  // For example, duration == TimeSpecification(seconds:0, nanoseconds:100)
-  print("\(duration)") 
+func time(_ body:() -> Void) {
+  guard let start = Clock.System.timeSpecification else { return }
+  body()
+  guard let end = Clock.System.timeSpecification else { return }
+  let duration = end - start
+  print("\(duration)")
 }
 ```
