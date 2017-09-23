@@ -7,6 +7,9 @@ build-install.rb
     See "LICENSE.txt" for more information.
 =end
 
+ModuleName = 'TimeSpecification'
+ModuleVersion = "0.0.0"
+
 # Requirements #####################################################################################
 require 'fileutils'
 require 'json'
@@ -23,14 +26,13 @@ OS = case RbConfig::CONFIG['host_os']
 end
 SharedLibraryPrefix = 'lib'
 SharedLibrarySuffix = (OS == :macOS) ? '.dylib' : '.so'
-ModuleName = 'TimeSpecification'
 ModuleLinkName = 'Swift' + ModuleName
 RootDirectory = Pathname(__FILE__).dirname.expand_path
 
 ## Default Values ##
 Defaults = {
   :swift => Pathname('swift'),
-  :build_directory => Pathname('./build'),
+  :build_directory => Pathname('./.build'),
   :install => false,
   :prefix => Pathname('/usr/local'),
   :debug => false,
@@ -58,7 +60,7 @@ Canceled = {
 }
 ### Qualifications ###
 UnsavableOptions = [:build_directory, :sdk, :clean]
-PathnameOptions = [:ninja, :swift, :build_directory, :prefix]
+PathnameOptions = [:swift, :build_directory, :prefix]
 
 # Functions ########################################################################################
 ## Error ##
@@ -198,20 +200,21 @@ File.write(cache_json.to_s, JSON.dump(Options))
 Options.each_pair {|key, value| Options[key] = Defaults[key] if value.nil? }
 
 # Swift? ###########################################################################################
-failed("#{Options[:swift]} is not found.") if !system(%Q[which #{Options[:swift].escaped} >/dev/null])
+failed("#{Options[:swift]} is not found.") if !system(%Q[which #{Options[:swift].escaped()} >/dev/null])
 
 # Build! ###########################################################################################
 configuration = Options[:debug] ? 'debug' : 'release'
 
+binPath = Pathname(%x[#{Options[:swift].escaped()} build --build-path #{Options[:build_directory].escaped()} --configuration #{configuration} --show-bin-path].chomp)
 libFilename = Pathname(SharedLibraryPrefix + ModuleLinkName + SharedLibrarySuffix)
-libPath = Options[:build_directory] + Pathname(configuration) + libFilename
+libPath = binPath + libFilename
 moduleFilename = Pathname(ModuleName + '.swiftmodule')
-modulePath = Options[:build_directory] + Pathname(configuration) + moduleFilename
+modulePath = binPath + moduleFilename
 
 # Build
 if !Options[:skip_build]
   puts("[Start Building...]")
-  try_exec(["swift build --build-path #{Options[:build_directory].escaped()}",
+  try_exec(["#{Options[:swift].escaped()} build --build-path #{Options[:build_directory].escaped()}",
            "--configuration #{configuration}",
            "-Xswiftc -emit-library -Xswiftc -o#{libPath.escaped()}",
            "-Xswiftc -module-link-name -Xswiftc #{ModuleLinkName}",
@@ -225,10 +228,10 @@ end
 if !Options[:skip_test]
   puts("[Start Testing...]")
   if !Options[:debug]
-    $stderr.puts("** WARNING ** No tests will be executed when `release` mode is specified.\n")
+    $stderr.puts("** WARNING ** No tests will be executed unless debug mode is specified.")
   else
-    try_exec(["swift test --build-path #{Options[:build_directory].escaped()}",
-             "--configuration #{configuration}"].join(" "), 2)
+    try_exec(["#{Options[:swift].escaped()} test --build-path #{Options[:build_directory].escaped()}",
+              "--configuration #{configuration}"].join(" "), 2)
   end
   puts()
 end
@@ -241,14 +244,53 @@ if Options[:install]
     $stderr.puts("** WARNING ** DEBUG MODE. Products to be installed may not be optimized.\n")
   end
 
-  libInstallDirPath = Options[:prefix] + Pathname('lib')  
-  libInstallPath = libInstallDirPath + libFilename
-  moduleInstallDirPath = Options[:prefix] + Pathname('include')
-  moduleInstallPath = moduleInstallDirPath + moduleFilename
-  
-  try_exec(["mkdir -p #{libInstallDirPath.escaped()} &&",
-            "cp #{libPath.escaped()} #{libInstallPath.escaped()} &&",
-            "mkdir -p #{moduleInstallDirPath.escaped()} &&",
-            "cp #{modulePath.escaped()} #{moduleInstallPath.escaped()}"].join(" "), 2)
+  if ModuleVersion =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)(?:\-(.+))?/
+    majorVersion = $1
+    minorVersion = $2
+    patchVersion = $3
+    prereleaseIdentifiers = $4
+    
+    suffixes = [
+      ".#{majorVersion}.#{minorVersion}",
+      ".#{majorVersion}",
+      ""
+    ]
+    if prereleaseIdentifiers
+      suffixes.unshift(".#{majorVersion}.#{minorVersion}.#{patchVersion}")
+    end
+    
+    libInstallDirPath = Options[:prefix] + Pathname('lib')
+    moduleInstallDirPath = Options[:prefix] + Pathname('include')
+    originalLibFilename = Pathname(SharedLibraryPrefix + ModuleLinkName + SharedLibrarySuffix + '.' + ModuleVersion)
+    originalModuleFilename = Pathname(ModuleName + '.swiftmodule' + '.' + ModuleVersion)
+    originalLibInstallPath = libInstallDirPath + originalLibFilename
+    originalModuleInstallPath = moduleInstallDirPath + originalModuleFilename
+    
+    try_exec("mkdir -p #{libInstallDirPath.escaped()}", 2)
+    try_exec("rm -f #{originalLibInstallPath.escaped()}", 2)
+    try_exec("cp -f #{libPath.escaped()} #{originalLibInstallPath.escaped()}", 2)
+    try_exec("mkdir -p #{moduleInstallDirPath.escaped()}", 2)
+    try_exec("rm -f #{originalModuleInstallPath.escaped()}", 2)
+    try_exec("cp -f #{modulePath.escaped()} #{originalModuleInstallPath.escaped()}", 2)
+    
+    suffixes.each_with_index{|suffix, ii|
+      sourceSuffix = (ii == 0) ? ('.' + ModuleVersion) : suffixes[ii - 1]
+      
+      libSourceFilename = Pathname(SharedLibraryPrefix + ModuleLinkName + SharedLibrarySuffix + sourceSuffix)
+      moduleSourceFilename = Pathname(ModuleName + '.swiftmodule' + sourceSuffix)
+      libDestFilename = Pathname(SharedLibraryPrefix + ModuleLinkName + SharedLibrarySuffix + suffix)
+      moduleDestFilename = Pathname(ModuleName + '.swiftmodule' + suffix)
+      
+      libSourcePath = libInstallDirPath + libSourceFilename
+      moduleSourcePath = moduleInstallDirPath + moduleSourceFilename
+      libDestPath = libInstallDirPath + libDestFilename
+      moduleDestPath = moduleInstallDirPath + moduleDestFilename
+      
+      try_exec("ln -fs #{libSourcePath.escaped()} #{libDestPath.escaped}", 2)
+      try_exec("ln -fs #{moduleSourcePath.escaped()} #{moduleDestPath.escaped}", 2)
+    }
+  else
+    $stderr.puts("Invalid Version")
+  end
 end
 
