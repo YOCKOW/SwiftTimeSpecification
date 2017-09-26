@@ -9,7 +9,7 @@ matrix:
         - curl ${SWIFT_ARCHIVE_URL} -o ../swift.tar.gz
         - mkdir ../swift
         - tar xzf ../swift.tar.gz -C ../swift --strip-components 1
-        - export PATH="$(realpath \"$(pwd)/../swift/usr/bin\"):${PATH}"
+        - export PATH="$(pwd)/../swift/usr/bin:${PATH}"
     - os: osx
       osx_image: xcode9
       sudo: required
