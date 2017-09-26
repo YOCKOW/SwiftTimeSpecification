@@ -1,4 +1,4 @@
 language: objective-c
 osx_image: xcode9
 script:
- - ./build-install.rb
+ - ./build-install.rb --debug
