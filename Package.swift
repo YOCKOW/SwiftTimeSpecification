@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "TimeSpecification",
-  products: [.library(name: "TimeSpecification", type:.dynamic, targets: ["TimeSpecification"])],
+  products: [.library(name: "SwiftTimeSpecification", type:.dynamic, targets: ["TimeSpecification"])],
   dependencies: [],
   targets: [
     .target(name: "TimeSpecification", dependencies: [], path:".", sources:["Sources"]),
