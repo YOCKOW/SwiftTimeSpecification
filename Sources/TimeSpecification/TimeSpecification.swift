@@ -90,6 +90,14 @@ extension TimeSpecification: ExpressibleByFloatLiteral {
   }
 }
 
+extension TimeSpecification {
+  /// The value of seconds
+  public var integerValue: Int { return Int(self.seconds) }
+  
+  /// Double representation of the time.
+  public var doubleValue: Double { return Double(self.nanoseconds) * 1.0E-9 + Double(self.seconds) }
+}
+
 // sum and difference
 extension TimeSpecification {
   public static func +(lhs:TimeSpecification, rhs:TimeSpecification) -> TimeSpecification {
