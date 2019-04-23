@@ -14,6 +14,8 @@ import Glibc
 private typealias CTimeSpec = timespec
 #endif
 
+import Foundation
+
 /// The representation for the time in nanoseconds.
 public struct TimeSpecification {
   public var seconds: Int64 = 0
@@ -96,6 +98,16 @@ extension TimeSpecification {
   
   /// Double representation of the time.
   public var doubleValue: Double { return Double(self.nanoseconds) * 1.0E-9 + Double(self.seconds) }
+}
+
+extension TimeSpecification: CustomStringConvertible, CustomDebugStringConvertible {
+  public var description: String {
+    return String(format:"%.09f seconds", self.doubleValue)
+  }
+  
+  public var debugDescription: String {
+    return self.description
+  }
 }
 
 // sum and difference
