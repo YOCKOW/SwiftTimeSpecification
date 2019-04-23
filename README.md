@@ -8,9 +8,9 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 import TimeSpecification
 
 func time(_ body:() -> Void) {
-  let start = TimeSpecification(clock:.stystem)
+  let start = TimeSpecification(clock: .system)
   body()
-  let end = TimeSpecification(clock:.stystem)
+  let end = TimeSpecification(clock: .system)
   let duration = end - start
   print("\(duration)")
 }
