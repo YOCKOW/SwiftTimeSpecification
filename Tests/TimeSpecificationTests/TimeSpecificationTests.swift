@@ -8,6 +8,8 @@
 import XCTest
 @testable import TimeSpecification
 
+import Foundation
+
 class TimeSpecificationTests: XCTestCase {
   func test_normalization() {
     let N1 = TimeSpecification(seconds:0, nanoseconds:1_234_567_890)
@@ -15,6 +17,15 @@ class TimeSpecificationTests: XCTestCase {
     
     XCTAssertTrue(N1.seconds == 1 && N1.nanoseconds == 234_567_890, "Normalization Test 1")
     XCTAssertTrue(N2.seconds == -3 && N2.nanoseconds == 765_432_110, "Normalization Test 2")
+  }
+  
+  func test_codable() throws {
+    let spec = TimeSpecification(seconds: 123, nanoseconds: 456_789)
+    let encoded = try JSONEncoder().encode(spec)
+    XCTAssertEqual(String(data: encoded, encoding: .utf8), #"{"seconds":123,"nanoseconds":456789}"#)
+    
+    let decoded = try JSONDecoder().decode(TimeSpecification.self, from: encoded)
+    XCTAssertEqual(decoded, spec)
   }
   
   func test_comparison() {

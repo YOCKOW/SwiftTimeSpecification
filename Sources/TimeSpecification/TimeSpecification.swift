@@ -58,6 +58,25 @@ public struct TimeSpecification {
   }
 }
 
+extension TimeSpecification: Codable {
+  public enum CodingKeys: String, CodingKey {
+    case seconds, nanoseconds
+  }
+  
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(self.seconds, forKey: .seconds)
+    try container.encode(self.nanoseconds, forKey: .nanoseconds)
+  }
+  
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let seconds = try container.decode(Int64.self, forKey: .seconds)
+    let nanoseconds = try container.decode(Int32.self, forKey: .nanoseconds)
+    self.init(seconds: seconds, nanoseconds: nanoseconds)
+  }
+}
+
 extension TimeSpecification: Equatable {
   public static func ==(lhs:TimeSpecification, rhs:TimeSpecification) -> Bool {
     return lhs.seconds == rhs.seconds && lhs.nanoseconds == rhs.nanoseconds
