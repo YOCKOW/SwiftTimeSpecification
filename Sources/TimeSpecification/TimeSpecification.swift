@@ -106,11 +106,11 @@ extension TimeSpecification {
 
 extension TimeSpecification: CustomStringConvertible, CustomDebugStringConvertible {
   public var description: String {
-    return String(format:"%.09f seconds", self.doubleValue)
+    return String(format:"\(self.seconds).%09d", self.nanoseconds)
   }
   
   public var debugDescription: String {
-    return self.description
+    return self.description + " seconds."
   }
 }
 

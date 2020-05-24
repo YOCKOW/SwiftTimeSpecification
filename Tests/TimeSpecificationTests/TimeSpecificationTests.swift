@@ -46,6 +46,11 @@ class TimeSpecificationTests: XCTestCase {
     XCTAssertEqual(L1 - R1, TimeSpecification(seconds:0, nanoseconds:-864_197_532), "Difference Test 1")
   }
   
+  func test_description() {
+    let spec = TimeSpecification(seconds: 123, nanoseconds: 456_789)
+    XCTAssertEqual(spec.description, "123.000456789")
+  }
+  
   func test_date() {
     let spec = TimeSpecification(seconds: 100, nanoseconds: 123_456_789)
     XCTAssertEqual(Date(timeIntervalSinceReferenceDate: spec),
