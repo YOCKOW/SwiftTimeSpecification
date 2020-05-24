@@ -190,3 +190,18 @@ extension TimeSpecification {
     self.init(c_timespec)
   }
 }
+
+extension TimeSpecification {
+  /// Measure a processing time of the closure.
+  ///
+  /// - parameters:
+  ///   * repeatCount: Indicates the number of times to execute the closure. It must be greater than zero.
+  ///   * body: The target closure.
+  public static func measure(repeatCount: Int = 1, _ body: () throws -> Void) rethrows -> TimeSpecification {
+    precondition(repeatCount > 0, "\(#function): `repeatCount` must be greater than zero.")
+    let start = TimeSpecification(clock: .system)
+    for _ in 0..<repeatCount { try body() }
+    let end = TimeSpecification(clock: .system)
+    return end - start
+  }
+}
