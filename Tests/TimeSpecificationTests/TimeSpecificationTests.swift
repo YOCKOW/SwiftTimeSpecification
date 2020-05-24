@@ -1,14 +1,14 @@
 /***************************************************************************************************
  SwiftTimeSpecificationTests.swift
-  © 2016-2019 YOCKOW.
+  © 2016-2020 YOCKOW.
     Licensed under MIT License.
     See "LICENSE.txt" for more information.
  **************************************************************************************************/
 
-// FIXME: These are irresponsible tests below.
-
 import XCTest
 @testable import TimeSpecification
+
+import Foundation
 
 class TimeSpecificationTests: XCTestCase {
   func test_normalization() {
@@ -17,6 +17,18 @@ class TimeSpecificationTests: XCTestCase {
     
     XCTAssertTrue(N1.seconds == 1 && N1.nanoseconds == 234_567_890, "Normalization Test 1")
     XCTAssertTrue(N2.seconds == -3 && N2.nanoseconds == 765_432_110, "Normalization Test 2")
+  }
+  
+  func test_codable() throws {
+    let spec = TimeSpecification(seconds: 123, nanoseconds: 456_789)
+    let encoded = try JSONEncoder().encode(spec)
+    let encodedString = try XCTUnwrap(String(data: encoded, encoding: .utf8))
+    // https://github.com/YOCKOW/SwiftTimeSpecification/runs/703218186?check_suite_focus=true#step:6:18
+    XCTAssertTrue(encodedString == #"{"seconds":123,"nanoseconds":456789}"# ||
+                  encodedString == #"{"nanoseconds":456789,"seconds":123}"#)
+    
+    let decoded = try JSONDecoder().decode(TimeSpecification.self, from: encoded)
+    XCTAssertEqual(decoded, spec)
   }
   
   func test_comparison() {
@@ -46,5 +58,16 @@ class TimeSpecificationTests: XCTestCase {
     let R1 = TimeSpecification(seconds:100, nanoseconds:987_654_321)
     XCTAssertEqual(L1 + R1, TimeSpecification(seconds:201, nanoseconds:111_111_110), "Sum Test 1")
     XCTAssertEqual(L1 - R1, TimeSpecification(seconds:0, nanoseconds:-864_197_532), "Difference Test 1")
+  }
+  
+  func test_description() {
+    let spec = TimeSpecification(seconds: 123, nanoseconds: 456_789)
+    XCTAssertEqual(spec.description, "123.000456789")
+  }
+  
+  func test_date() {
+    let spec = TimeSpecification(seconds: 100, nanoseconds: 123_456_789)
+    XCTAssertEqual(Date(timeIntervalSinceReferenceDate: spec),
+                   Date(timeIntervalSinceReferenceDate: 100.123456789))
   }
 }

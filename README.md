@@ -4,16 +4,24 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 
 
 ## Sample Code
+
+### Measure
+
 ```Swift
 import TimeSpecification
 
-func time(_ body:() -> Void) {
-  let start = TimeSpecification(clock: .system)
-  body()
-  let end = TimeSpecification(clock: .system)
-  let duration = end - start
-  print("\(duration)")
-}
+let duration = TimeSpecification.measure(repeatCount: 100) { doIt() }
+print("It took \(duration) seconds.") // -> Processing time to execute `doIt` 100 times. 
+
+```
+
+### With `Date`
+
+```Swift
+import TimeSpecification
+
+let now = TimeSpecification(clock: .calendar)
+let dateNow = Date(timeIntervalSince1970: now) // -> Almost same with Date(timeIntervalSince1970: Double(time(nil)))
 ```
 
 
