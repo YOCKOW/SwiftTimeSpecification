@@ -22,7 +22,10 @@ class TimeSpecificationTests: XCTestCase {
   func test_codable() throws {
     let spec = TimeSpecification(seconds: 123, nanoseconds: 456_789)
     let encoded = try JSONEncoder().encode(spec)
-    XCTAssertEqual(String(data: encoded, encoding: .utf8), #"{"seconds":123,"nanoseconds":456789}"#)
+    let encodedString = try XCTUnwrap(String(data: encoded, encoding: .utf8))
+    // https://github.com/YOCKOW/SwiftTimeSpecification/runs/703218186?check_suite_focus=true#step:6:18
+    XCTAssertTrue(encodedString == #"{"seconds":123,"nanoseconds":456789}"# ||
+                  encodedString == #"{"nanoseconds":456789,"seconds":123}"#)
     
     let decoded = try JSONDecoder().decode(TimeSpecification.self, from: encoded)
     XCTAssertEqual(decoded, spec)
