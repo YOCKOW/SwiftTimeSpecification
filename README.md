@@ -4,6 +4,9 @@ Its prototype is [YOCKOW's Gist](https://gist.github.com/YOCKOW/12d9607cb30f40b7
 
 
 ## Sample Code
+
+### Measure
+
 ```Swift
 import TimeSpecification
 
@@ -14,6 +17,15 @@ func time(_ body:() -> Void) {
   let duration = end - start
   print("\(duration)")
 }
+```
+
+### With `Date`
+
+```Swift
+import TimeSpecification
+
+let now = TimeSpecification(clock: .calendar)
+let dateNow = Date(timeIntervalSince1970: now)
 ```
 
 

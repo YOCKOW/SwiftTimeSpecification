@@ -100,6 +100,7 @@ extension TimeSpecification {
   public var integerValue: Int { return Int(self.seconds) }
   
   /// Double representation of the time.
+  @inlinable
   public var doubleValue: Double { return Double(self.nanoseconds) * 1.0E-9 + Double(self.seconds) }
 }
 
