@@ -112,6 +112,11 @@ extension TimeSpecification: ExpressibleByFloatLiteral {
     let double_seconds = floor(value)
     self.init(seconds: Int64(double_seconds), nanoseconds: Int32((value - double_seconds) * 1.0E+9))
   }
+  
+  /// Creates an instance initialized to the specified floating-point value.
+  public init<F>(_ value: F) where F: BinaryFloatingPoint {
+    self.init(floatLiteral: FloatLiteralType(value))
+  }
 }
 
 extension TimeSpecification {
@@ -215,6 +220,23 @@ extension TimeSpecification {
     #endif
 
     self.init(c_timespec)
+  }
+}
+
+/// Type used to represent a specific point in time relative
+/// to the absolute reference date of 1 Jan 2001 00:00:00 GMT.
+public typealias NanosecondAbsoluteTime = TimeSpecification
+
+/// Type used to represent elapsed time in naoseconds.
+public typealias NanosecondTimeInterval = TimeSpecification
+
+extension TimeSpecification {
+  /// The number of nanoseconds from 1 January 1970 to the reference date, 1 January 2001.
+  public static let timeIntervalBetween1970AndReferenceDate = NanosecondTimeInterval(Date.timeIntervalBetween1970AndReferenceDate)
+  
+  /// The interval between 00:00:00 UTC on 1 January 2001 and the current date and time.
+  public static var timeIntervalSinceReferenceDate: NanosecondAbsoluteTime {
+    return TimeSpecification(clock: .calendar) - TimeSpecification.timeIntervalBetween1970AndReferenceDate
   }
 }
 
