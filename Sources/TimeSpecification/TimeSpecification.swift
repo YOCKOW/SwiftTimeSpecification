@@ -121,6 +121,14 @@ extension TimeSpecification {
   /// Double representation of the time.
   @inlinable
   public var doubleValue: Double { return Double(self.nanoseconds) * 1.0E-9 + Double(self.seconds) }
+  
+  #if arch(i386) || arch(x86_64)
+  /// Float80 representation of the time.
+  @inlinable
+  public var float80Value: Float80 {
+    return Float80(self.nanoseconds) * 1.0E-9 + Float80(self.seconds)
+  }
+  #endif
 }
 
 extension TimeSpecification: CustomStringConvertible, CustomDebugStringConvertible {
