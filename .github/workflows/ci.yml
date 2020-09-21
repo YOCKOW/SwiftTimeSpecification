@@ -21,8 +21,8 @@ jobs:
           - macOS-latest
         swift-compat-ver:
           - '5'
-          # - '4.2'
-          # - '4'
+          - '4.2'
+          - '4'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
@@ -37,24 +37,27 @@ jobs:
           build-${{ github.workspace }}-
     - uses: YOCKOW/Action-setup-swift@master
       with:
-        swift-version: '5.2.2'
+        swift-version: '5.3'
+
     - name: Try to build products with debug mode.
-      run: |
-        swift build --configuration debug -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
-        if [ $? != 0 ]; then
-          echo "Failed to build products with debug mode."
-          rm -rf $(cd .build/debug && pwd -P)
-        fi
+      run: swift build --configuration debug -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
       continue-on-error: true
+    - name: Clean debug build directory if necessary
+      if: failure()
+      run: rm -rf $(cd .build/debug && pwd -P)
+    - name: Check XCTestManifests.swift
+      if: runner.os == 'macOS'
+      run: |
+        swift test --generate-linuxmain -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
+        git diff --exit-code
     - name: Test with debug mode.
       run: swift test --configuration debug -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
+
     - name: Try to build products with release mode.
-      run: |
-        swift build --configuration release -Xswiftc -enable-testing -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
-        if [ $? != 0 ]; then
-          echo "Failed to build products with release mode."
-          rm -rf $(cd .build/release && pwd -P)
-        fi
+      run: swift build --configuration release -Xswiftc -enable-testing -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
       continue-on-error: true
+    - name: Clean release build directory if necessary
+      if: failure()
+      run: rm -rf $(cd .build/release && pwd -P)
     - name: Test with release mode.
       run: swift test --configuration release -Xswiftc -enable-testing -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
