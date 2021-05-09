@@ -46,11 +46,6 @@ jobs:
     - name: Clean debug build directory if necessary
       if: steps.debug_build.outcome == 'failure'
       run: rm -rf $(cd .build/debug && pwd -P)
-    - name: Check XCTestManifests.swift
-      if: runner.os == 'macOS'
-      run: |
-        swift test --generate-linuxmain -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
-        git diff --exit-code
     - name: Test with debug mode.
       run: swift test --configuration debug -Xswiftc -swift-version -Xswiftc ${{ matrix.swift-compat-ver }}
     # RELEASE mode
