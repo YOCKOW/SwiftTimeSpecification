@@ -1,13 +1,13 @@
 /***************************************************************************************************
  TimeSpecification.swift
-  © 2016-2020 YOCKOW.
+  © 2016-2020,2024 YOCKOW.
     Licensed under MIT License.
     See "LICENSE.txt" for more information.
  **************************************************************************************************/
 
 #if canImport(Darwin)
-import Darwin
-private let mach_task_self:() -> mach_port_t = { mach_task_self_ }
+@preconcurrency import Darwin
+private let mach_task_self: @Sendable () -> mach_port_t = { mach_task_self_ }
 private typealias _CTimeSpec = mach_timespec_t
 #else
 import Glibc
@@ -17,7 +17,7 @@ private typealias _CTimeSpec = timespec
 import Foundation
 
 /// The representation for the time in nanoseconds.
-public struct TimeSpecification {
+public struct TimeSpecification: Sendable {
   public var seconds: Int64 = 0
   
   private var _nanoseconds: Int32 = 0

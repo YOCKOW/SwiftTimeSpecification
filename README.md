@@ -27,7 +27,7 @@ let dateNow = Date(timeIntervalSince1970: now) // -> Almost same with Date(timeI
 
 # Requirements
 
-- Swift 5 (including compatibility mode for 4, 4.2)
+- Swift 5, 6 (including language mode for 4, 4.2)
 - macOS or Linux
 
 
