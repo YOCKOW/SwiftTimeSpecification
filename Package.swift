@@ -18,6 +18,6 @@ let package = Package(
     .target(name: "TimeSpecification", dependencies: []),
     .testTarget(name: "TimeSpecificationTests", dependencies: ["TimeSpecification"]),
   ],
-  swiftLanguageVersions: [.v4, .v4_2, .v5]
+  swiftLanguageVersions: [.v4, .v4_2, .v5, .version("6")]
 )
 
